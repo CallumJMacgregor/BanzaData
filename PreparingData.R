@@ -87,7 +87,3 @@ write.table(matrix1, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 # N.B. at this point any typing errors in species names will become obvious as they will be assigned an additional column.
 # Therefore at this point, go back to the raw data, find these typing errors, correct them, and run this script again.
 
-
-
-
-
