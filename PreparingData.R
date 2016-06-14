@@ -1,6 +1,6 @@
-#########################################
+####################################################
 ####   Script for preparing data for analysis   ####
-#########################################
+####################################################
 
 
 ### Clear the workspace
@@ -9,14 +9,13 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("reshape2","ggplot2")
+j <- c("reshape2")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 
 library(reshape2)
-library(ggplot2)
 
 ### read in the data - this is the raw data as input by Paula. 
 # I have manually added a column called 'sampleID' with a unique number for each row of the dataframe;
