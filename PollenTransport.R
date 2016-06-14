@@ -9,13 +9,15 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("")
+j <- c("lme4","car","ggplot2")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 
-library()
+library(lme4)
+library(car)
+library(ggplot2)
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
 dframe1<-read.table("Data/MatrixNoct.txt", header=TRUE)
@@ -34,3 +36,4 @@ dframe1$PollenLoad<-rowSums(dframe1[c(7:79)])
 ### total up the number of pollen species for each insect (i.e. how many columns do not contain 0)
 dframe1$PollenTypes<-rowSums(dframe1[c(7:79)] != 0)
 
+### now you're ready to start looking for patterns!
