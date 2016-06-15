@@ -9,13 +9,14 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("reshape2")
+j <- c("reshape2","plyr")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 
-library(reshape2)
+lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't already loaded
+
 
 ### read in the data - this is the raw data as input by Paula. 
 # I have manually added a column called 'sampleID' with a unique number for each row of the dataframe;
@@ -85,4 +86,18 @@ write.table(matrix1, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 
 # N.B. at this point any typing errors in species names will become obvious as they will be assigned an additional column.
 # Therefore at this point, go back to the raw data, find these typing errors, correct them, and run this script again.
+
+
+
+# now we want to produce a separate file with the data organised by each sampling session at each site
+# we will do this by aggregating samples from the same site and sampling session
+
+matrix1r <- matrix1[,c(3:4,7:79)]
+summary(matrix1r)
+
+
+matrix2 <- ddply(matrix1r, .(Site,Date), numcolwise(sum))
+
+# output the reformatted dataframe to a .txt file to use in downstream analysis
+write.table(matrix2, "Data\\SamplesNoct.txt", sep="\t", row.names=FALSE)
 
