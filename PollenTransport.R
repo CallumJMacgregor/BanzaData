@@ -17,11 +17,11 @@ if(length(new.packages)) install.packages(new.packages)
 lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't already loaded
 
 # for some reason the package glmmADMB won't install via the usual methods, so:
-install.packages("R2admb")
-install.packages("glmmADMB", 
-                 repos=c("http://glmmadmb.r-forge.r-project.org/repos",
-                         getOption("repos")),
-                 type="source")
+#install.packages("R2admb")
+#install.packages("glmmADMB", 
+#                 repos=c("http://glmmadmb.r-forge.r-project.org/repos",
+#                         getOption("repos")),
+#                 type="source")
 library(glmmADMB)
 
 
@@ -42,21 +42,18 @@ dframe1$SlideNumber <- factor(dframe1$SlideNumber)
 summary(dframe1)
 
 ### total up the pollen grains for each insect
-dframe1$PollenLoad <- rowSums(dframe1[c(7:79)])
+dframe1$PollenLoad <- rowSums(dframe1[c(10:82)])
 
 ### total up the number of pollen species for each insect (i.e. how many columns do not contain 0)
-dframe1$PollenTypes <- rowSums(dframe1[c(7:79)] != 0)
+dframe1$PollenTypes <- rowSums(dframe1[c(10:82)] != 0)
 
 ### create a binary (yes/no) variable for whether each insect is carrying any pollen
 dframe1$PollenYN <- ifelse(dframe1$PollenTypes==0,0,1)
 
-### create a variable for fire/no fire.
-### This tells R to search for "NF" in each row of 'Site', to label rows containing "NF" as NoFire, and all other rows as Fire
-dframe1$Treatment <- ifelse(grepl("NF",dframe1$Site),"NoFire","Fire")
-dframe1$Treatment <- factor(dframe1$Treatment)
+
 
 ### create a subset dframe containing only the interactions
-interactions <- subset(dframe1, select=-c(SampleID,Date,Site,SlideNumber,PollenCount,Treatment,PollenTypes,PollenLoad))
+interactions <- subset(dframe1, select=-c(SampleID,Date,Site,SlideNumber,PollenCount,Treatment,SamplingDay,Sample,PollenTypes,PollenLoad,PollenYN))
 summary(interactions)
 
 

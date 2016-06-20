@@ -78,8 +78,32 @@ matrix1 <- dcast(dframe1.melt, SampleID + Family_Species + Date +
                  value.var = "PollenNumber",
                  fun.aggregate = sum)
 
+
+
 # this has added an extra column (I don't know why!) but let's delete it
 matrix1 <- matrix1[,c(1:6,8:80)]
+
+
+### create a variable for fire/no fire.
+### This tells R to search for "NF" in each row of 'Site', to label rows containing "NF" as NoFire, and all other rows as Fire
+matrix1$Treatment <- ifelse(grepl("NF",matrix1$Site),"NoFire","Fire")
+matrix1$Treatment <- factor(matrix1$Treatment)
+
+### create a variable for sample
+# this will be important when we come to do network analysis
+# first tell R to give each date a unique value
+matrix1$SamplingDay <- factor(matrix1$Date,
+                              levels = levels(matrix1$Date),
+                              labels = 1:21)
+
+# then create a new column including both Site and Date information
+matrix1$Sample <- do.call(paste, c(matrix1[c("Site","SamplingDay")], sep = "_"))
+
+# finally, reorder the columns to put pollen variables after the new variables
+names(matrix1) # check what columns we have and what order
+matrix1 <- matrix1[,c(1:6,80:82,7:79)] # tell R what order to put them in
+names(matrix1) # check it's worked
+
 
 # output the reformatted dataframe to a .txt file to use in downstream analysis
 write.table(matrix1, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
@@ -92,11 +116,11 @@ write.table(matrix1, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 # now we want to produce a separate file with the data organised by each sampling session at each site
 # we will do this by aggregating samples from the same site and sampling session
 
-matrix1r <- matrix1[,c(3:4,7:79)]
+matrix1r <- matrix1[,c(3:4,9:82)]
 summary(matrix1r)
 
 
-matrix2 <- ddply(matrix1r, .(Site,Date), numcolwise(sum))
+matrix2 <- ddply(matrix1r, .(Site,Date,Sample), numcolwise(sum))
 
 # output the reformatted dataframe to a .txt file to use in downstream analysis
 write.table(matrix2, "Data\\SamplesNoct.txt", sep="\t", row.names=FALSE)

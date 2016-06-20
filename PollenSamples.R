@@ -36,10 +36,10 @@ summary(dframe1) # Check it's imported correctly
 
 
 ### total up the pollen grains for each sample
-dframe1$PollenCount <- rowSums(dframe1[c(3:75)])
+dframe1$PollenCount <- rowSums(dframe1[c(4:76)])
 
 ### total up the number of pollen species for each sample (i.e. how many columns do not contain 0)
-dframe1$PollenTypes <- rowSums(dframe1[c(3:75)] != 0)
+dframe1$PollenTypes <- rowSums(dframe1[c(4:76)] != 0)
 
 
 ### create a variable for fire/no fire.
