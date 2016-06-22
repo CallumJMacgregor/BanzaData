@@ -18,7 +18,9 @@ lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't 
 
 
 ### load up Callum's custom set of functions
-source("CheckResidsFunction.R")
+f <- c("NetworkFunction.R")
+lapply(f, source)
+
 
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
@@ -49,62 +51,65 @@ dframe2m <- dframe2m[,-1]
 
 ### plot a full-system network
 plotweb(dframe2m)
-networklevel(dframe2m)
+# networklevel(dframe2m)
+# trying to run networklevel() on this full network causes my computer to crash, so I've concealed it behind a #!
 
 
 ### that's fine, but we want networks (and descriptors) for each sample
 
 # split each sample into a separate dataframe
-dframes <- split(dframe2, list(dframe2$Sample))
-
+dframes <- split(dframe2, list(dframe2$Sample))  # this creates a list of smaller dframes, one for each level of sample
 summary(dframes)
+# for example...
+summary(dframes[1]) # the first dframe in the list is site F1 on sampling day 10
+dframes[1]
 
-# using a loop, ...
+### using a loop and a custom function called 'network', ...
 
-# summarise each dataframe
-lapply(dframes, function(x) summary(x))
+### prepare the dataframes for network analysis and run it (this command will take a few minutes to run)
+metrics <- lapply(dframes, network)
+summary(metrics)
 
-# remove the Sample column
-dframes1 <- lapply(dframes, function(x) x[,c(1,3:75)])
+### we now have a list of dataframes, each one containing the network metrics of one site
+
+# for sites that had too little data, the dataframes just contain the value "Fail" as a character
+# combine all dataframes together
+metrics.merge <- do.call("cbind", metrics)    # merge the data with one sample per column
+colnames(metrics.merge) <- names(metrics)     # assign the sample names to each column
+metrics.merge <- data.frame(t(metrics.merge))
+metrics.merge
+
+### before this can be analysed, we need to reintroduce data about each site (e.g. Treatment)
+### all this information is held within the previously used sample-level pollen dataframe:
+dframeP<-read.table("Data/SamplesNoct.txt", header=TRUE)
+summary(dframeP)
+
+# we don't need any of the pollen data, so:
+dframeP <- dframeP[,1:3]
+
+# but we do need a Treatment variable, so:
+dframeP$Treatment <- ifelse(grepl("NF",dframeP$Site),"NoFire","Fire")
+dframeP$Treatment <- factor(dframeP$Treatment)
+
+# for merge to work, we need to set the row names
+rownames(dframeP) <- dframeP$Sample
+
+# now we merge the two dataframes together by row name, using 'by=0' (column 0 is the row names)
+metrics.full <- merge(metrics.merge, dframeP, by=0)
 
 
-plotweb(dframes1[1])
+### before we can analyse this data, we need to remove any samples which have failed
 
-
-
-
-
-# make the first column the row names
-dframes2 <- lapply(dframes1, function(x) 
-                      rownames(x) <- x[,1])
-
-dframes3 <- lapply(dframes2, function(x)
-                x <- x[,-1])
+# subset the columns to keep only those which do not have "Fail" values
+metrics.good <- metrics.full[ which( ! metrics.full$connectance %in% "Fail") , ]
   
-  
-  samp2 <- samp[,-1]
-       rownames(samp2) <- samp[,1])
 
-lapply(dframes, function(x)
-  plotweb(x)
-)
+### hooray! we now have network metrics for each sample with sufficient data to produce a network
 
 
-####
+### output the dataframe to a .txt file to use in downstream analysis
+write.table(metrics.good, "Data\\NetworkMetrics.txt", sep="\t", row.names=FALSE)
 
 
 
 
-
-plotweb(CALLUM)
-#change arrows
-plotweb(CALLUM, arrow="down")
-#change colours etc
-plotweb(CALLUM, arrow="down", col.high = "red")
-#change individual colours
-plotweb(CALLUM, arrow="down", col.high = c("red", "green", "yellow", "red", "blue", "black", "blue", "red"))
-# colours above and below
-plotweb(CALLUM, arrow="down", col.high = c("red", "green", "yellow", "red", "blue", "black", "blue", "red"), col.low = c("green","yellow", "red", "blue", "black", "blue", "red", "brown"))
-# see col.interaction for changing link colours and use c() as above for individuals
-#calculate network metrics
-networklevel(CALLUM)
