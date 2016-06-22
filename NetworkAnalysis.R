@@ -95,7 +95,7 @@ dframeP$Treatment <- factor(dframeP$Treatment)
 rownames(dframeP) <- dframeP$Sample
 
 # now we merge the two dataframes together by row name, using 'by=0' (column 0 is the row names)
-metrics.full <- merge(metrics.merge, dframeP, by=0)
+metrics.full <- merge(dframeP, metrics.merge, by=0)
 
 
 ### before we can analyse this data, we need to remove any samples which have failed
@@ -103,6 +103,9 @@ metrics.full <- merge(metrics.merge, dframeP, by=0)
 # subset the columns to keep only those which do not have "Fail" values
 metrics.good <- metrics.full[ which( ! metrics.full$connectance %in% "Fail") , ]
   
+# remove the duplicate 'row.names' column - this information is the same as 'Sample'
+metrics.good <- metrics.good[,-1]
+
 
 ### hooray! we now have network metrics for each sample with sufficient data to produce a network
 
