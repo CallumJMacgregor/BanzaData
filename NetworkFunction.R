@@ -16,7 +16,10 @@ network <- function(x) {
     x <- t(x)                        # transpose the matrix so pollinators are in columns
     data <- data.frame(networklevel(x, index = "ALLBUTDD"))  # produces network metrics for the matrix
     data[is.na(data)] <- 0                                 # makes NAs into 0s
-    return(data)                                           # outputs the data
+    secex <- second.extinct(x, participant = "both", method = "random")   # simulates secondary extinctions
+    robust <- data.frame(robustness(secex))               # calculates robustness from secex simulations
+    return(data)                                          # outputs the data
+    return(robust)
     
   } else {                                               # if only one or two insect species sampled...
     
