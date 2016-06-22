@@ -67,6 +67,7 @@ dframes[1]
 ### using a loop and a custom function called 'network', ...
 
 ### prepare the dataframes for network analysis and run it (this command will take a few minutes to run)
+# the command will print "Fail" each time it detects a dataframe with too little data to produce a network
 metrics <- lapply(dframes, network)
 summary(metrics)
 
