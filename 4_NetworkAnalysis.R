@@ -71,6 +71,8 @@ dframes[1]
 metrics <- lapply(dframes, network)
 summary(metrics)
 
+###
+
 ### we now have a list of dataframes, each one containing the network metrics of one site
 
 # for sites that had too little data, the dataframes just contain the value "Fail" as a character
