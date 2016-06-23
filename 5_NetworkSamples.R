@@ -175,4 +175,45 @@ chkres(model1NODF)  # these residuals look mostly ok
 
 
 
+### next - robustness
+
+### Plot it against treatment so you have an idea of what to expect
+hist(dframe1$robustness)                   # this looks roughly like a Poisson distribution but non-integer
+hist(log(dframe1$robustness,10))           # this looks roughly like a normal distribution
+plot(robustness ~ Treatment, data = dframe1)
+
+
+# construct models using Date and Site as random effects
+
+model1RB <- lmer(log(robustness,10) ~ Treatment # fixed effects
+                 + (1|Date) + (1|Site), # random effects
+                 data = dframe1)
+
+# inspect and test the model
+summary(model1RB)
+drop1(model1RB, test="Chi")  
+
+
+# check the model's residuals
+chkres(model1RB)  # these residuals aren't great - a hint of a positive trend
+
+
+# try different error families
+
+model2RB <- glmmPQL(robustness ~ Treatment,
+                    random = list(~1|Date, ~1|Site),
+                    family = quasipoisson (link = "log"),
+                    data = dframe1)
+
+
+summary(model2RB)
+Anova(model2RB, type="III")  # drop1 doesn't work properly with this model class so we use a Type III Anova instead
+
+# check residuals
+# this function produces a subset of the previous plots that are available for this model class
+chkres.PQL(model2RB) # these are an improvement though maybe still a hint of a trend
+
+
+
+
 
