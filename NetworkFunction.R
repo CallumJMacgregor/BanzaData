@@ -35,3 +35,14 @@ network <- function(x) {
     
     }
 }
+
+
+
+
+prepare <- function(x) {
+    x <- x[c(1,3:75)]                # remove the Sample column (every entry is identical within each dframe)
+    rownames(x) <- x[,1]             # set the row names as the first column (Family_Species)
+    x <- x[,-1]                      # remove the first column, leaving Family_Species as the row names only
+    x <- t(x)                        # transpose the matrix so pollinators are in columns
+    return(x)                        # outputs the data
+}
