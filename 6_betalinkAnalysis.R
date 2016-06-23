@@ -1,0 +1,76 @@
+##################################################
+####   Script for network analysis by sample  ####
+##################################################
+
+
+### Clear the workspace
+rm(list=ls())
+
+
+### install if necessary and then load the libraries you need
+
+j <- c("betalink")
+
+new.packages <- j[!(j %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't already loaded
+
+
+### load up Callum's custom set of functions
+f <- c("NetworkFunction.R")
+lapply(f, source)
+
+
+
+### read in the data - this is the .txt file you produced in the PreparingData.R script. 
+dframe1<-read.table("Data/MatrixNoct.txt", header=TRUE)
+
+summary(dframe1) # Check it's imported correctly
+
+### prepare the data for network analysis
+
+# trim off extra columns
+dframe1r <- dframe1[,c(2,9:82)]
+
+# change each interaction to a 1
+dframe1r[,3:75][dframe1r[,3:75] > 0] <- 1
+
+
+# summarise plant-insect interactions for each insect species within each sample
+# this produces semi-quantitative data - e.g. if two individuals of an insect species
+# interact with a plant species in a sample,
+# the entry for that interaction within that sample will be 2
+
+dframe2 <- ddply(dframe1r, .(Family_Species,Sample), numcolwise(sum))
+
+# split each sample into a separate dataframe
+dframes <- split(dframe2, list(dframe2$Sample))  # this creates a list of smaller dframes, one for each level of sample
+summary(dframes)
+
+# this is not yet in proper matrix form for network analysis, so use custom function 'prepare':
+dframes.prep <- lapply(dframes, prepare)
+
+# and now use 'prepare_networks' from the betalink package to convert these into the correct format for betalink (igraph)
+networks <- prepare_networks(dframes.prep)
+summary(networks)
+
+# measure dissimilarity between networks; there are 23 options for B-diversity measures but let's use the default
+distance <- beta_os_prime(networks)
+distance
+
+B-div <- network_betadiversity(networks)
+
+plot <- network_betaplot(networks[1], networks[2], na="grey20", nb="black",ns="grey70")
+
+
+
+
+
+
+
+
+
+
+
+
