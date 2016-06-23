@@ -16,10 +16,17 @@ network <- function(x) {
     x <- t(x)                        # transpose the matrix so pollinators are in columns
     data <- data.frame(networklevel(x, index = "ALLBUTDD"))  # produces network metrics for the matrix
     data[is.na(data)] <- 0                                 # makes NAs into 0s
+    data$metric <- row.names(data)                         # creates a column containing the metric names
     secex <- second.extinct(x, participant = "both", method = "random")   # simulates secondary extinctions
-    robust <- data.frame(robustness(secex))               # calculates robustness from secex simulations
-    return(data)                                          # outputs the data
-    return(robust)
+    robust <- data.frame(robustness(secex))                # calculates robustness from secex simulations
+    robust$metric <- row.names(robust)                     # creates a column for the metric names
+    robust$metric <- "robustness"                          # sets the metric name as 'robustness'
+    row.names(robust) <- robust$metric                     # makes 'robustness' the row name
+    names(robust) <- names(data)                           # makes the column names of the two dframes identical
+    results <- rbind(data,robust)                          # tacks the robustness value on the end of the other metrics
+    rownames(results) <- results$metric                    # resets the rownames with the full list of metric names
+    results <- results[c(0:1)]                             # trims off the metric names column, preserving the rownames
+    return(results)                                        # outputs the data
     
   } else {                                               # if only one or two insect species sampled...
     
