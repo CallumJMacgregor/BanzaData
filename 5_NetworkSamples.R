@@ -195,7 +195,7 @@ drop1(model1RB, test="Chi")
 
 
 # check the model's residuals
-chkres(model1RB)  # these residuals aren't great - a hint of a positive trend
+chkres(model1RB)  # these residuals aren't too bad - a hint of a positive trend
 
 
 # try different error families
@@ -205,14 +205,42 @@ model2RB <- glmmPQL(robustness ~ Treatment,
                     family = quasipoisson (link = "log"),
                     data = dframe1)
 
+# Quasi-poisson model fails to converge! Eek.
 
-summary(model2RB)
-Anova(model2RB, type="III")  # drop1 doesn't work properly with this model class so we use a Type III Anova instead
 
-# check residuals
-# this function produces a subset of the previous plots that are available for this model class
-chkres.PQL(model2RB) # these are an improvement though maybe still a hint of a trend
+# Try a Gamma distribution?
 
+
+model3RB <- glmer(robustness ~ Treatment # fixed effects
+                  + (1|Date) + (1|Site), # random effects
+                  family = Gamma(link="log"),
+                  data = dframe1)
+
+# inspect and test the model
+summary(model3RB)
+drop1(model3RB, test="Chi")  
+
+
+# check the model's residuals
+chkres(model3RB)  # these residuals are definitely worse
+
+
+
+# inverse Gaussian (we don't often use this but conceptually it could work)
+
+
+model4RB <- glmer(robustness ~ Treatment # fixed effects
+                  + (1|Date) + (1|Site), # random effects
+                  family = inverse.gaussian(link="log"),
+                  data = dframe1)
+
+# inspect and test the model
+summary(model4RB)
+drop1(model4RB, test="Chi")  
+
+
+# check the model's residuals
+chkres(model4RB)  # these residuals are surprisingly pretty good!
 
 
 
