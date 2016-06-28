@@ -31,10 +31,10 @@ summary(dframe1) # Check it's imported correctly
 ### prepare the data for network analysis
 
 # trim off extra columns
-dframe1r <- dframe1[,c(2,9:82)]
+dframe1r <- dframe1[,c(2,9:80)]
 
-# change each interaction to a 1
-dframe1r[,3:75][dframe1r[,3:75] > 0] <- 1
+# change each interaction to a 1 for flower-visitor analysis
+dframe1r[,3:73][dframe1r[,3:73] > 0] <- 1
 
 
 # summarise plant-insect interactions for each insect species within each sample
@@ -52,7 +52,7 @@ dframe2m <- dframe2m[,-1]
 ### plot a full-system network
 plotweb(dframe2m)
 # networklevel(dframe2m)
-# trying to run networklevel() on this full network causes my computer to crash, so I've concealed it behind a #!
+# trying to run networklevel() on this full network causes my computer to crash, so I've concealed it behind a # to stop it from running every time!
 
 
 ### that's fine, but we want networks (and descriptors) for each sample
