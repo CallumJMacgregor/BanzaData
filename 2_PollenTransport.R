@@ -42,15 +42,23 @@ dframe1$SlideNumber <- factor(dframe1$SlideNumber)
 summary(dframe1)
 
 ### total up the pollen grains for each insect
-dframe1$PollenLoad <- rowSums(dframe1[c(10:82)])
+dframe1$PollenLoad <- rowSums(dframe1[c(10:80)])
 
 ### total up the number of pollen species for each insect (i.e. how many columns do not contain 0)
-dframe1$PollenTypes <- rowSums(dframe1[c(10:82)] != 0)
+dframe1$PollenTypes <- rowSums(dframe1[c(10:80)] != 0)
 
 ### create a binary (yes/no) variable for whether each insect is carrying any pollen
 dframe1$PollenYN <- ifelse(dframe1$PollenTypes==0,0,1)
 
+# check it's worked
+dframe1$check <- ifelse(dframe1$PollenCount==dframe1$PollenYN,T,
+                        ifelse(dframe1$PollenYN==1 & dframe1$PollenCount>0, T,F))
 
+# if 100% TRUE it's worked - if not, something's wrong
+summary(dframe1$check)
+
+# remove the check column
+dframe1 <- dframe1[,c(1:83)]
 
 ### create a subset dframe containing only the interactions
 interactions <- subset(dframe1, select=-c(SampleID,Date,Site,SlideNumber,PollenCount,Treatment,SamplingDay,Sample,PollenTypes,PollenLoad,PollenYN))
@@ -207,4 +215,29 @@ chkres(model2NB) # these are very similar to the Poisson residuals
 ### the residuals are all similarly good. In this situation it's best to choose the simplest model - in this case, Poisson
 
 ### therefore Treatment does not significantly affect per-moth pollen types
+
+
+### finally, let's look at proportion of moths carrying pollen
+
+### Plot it against treatment so you have an idea of what to expect
+plot(PollenYN ~ Treatment, data = dframe1)
+hist(dframe1$PollenYN)
+
+### this data is definitely binomial, so we don't need to worry too much about model selection:
+
+model3B <- glmer(PollenYN~Treatment
+                 + (1|Date) + (1|Site),
+                 family = binomial (link = "logit"),
+                 data = dframe1)
+
+summary(model3B)
+drop1(model3B, test="Chi")
+
+
+# no significant effect on likelihood of a moth carrying pollen (unlike my street light study)
+
+
+
+
+
 
