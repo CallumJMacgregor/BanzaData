@@ -19,9 +19,10 @@ lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't 
 
 
 ### read in the data - this is the raw data as input by Paula. 
-# I have manually added a column called 'sampleID' with a unique number for each row of the dataframe;
+# I have manually added a column called 'SampleID' with a unique number for each row of the dataframe;
 # I have renamed "Family/Species" to "Family_Species", 
 # and added _1 to the first PollenType and PollenNumber column for consistency
+# Finally, I've put a 0 in "PollenNumber_1" for insects with no pollen - this is important
 dframe1<-read.csv("Data/BanzaDataNoct.csv", header=TRUE)
 
 summary(dframe1) # Check it's imported correctly
@@ -64,12 +65,13 @@ dframe1.melt <- merge(melt1, melt2)
 # remove the row labels as we are finished with them
 dframe1.melt <- dframe1.melt[,c(1:6,8:9)]
 
-# remove all the rows with NAs
-dframe1.melt <- dframe1.melt[complete.cases(dframe1.melt[,7:8]),]
+# remove all the rows with NAs, keeping a single row for any moths with zero pollen (because of the zeroes in PollenNumber_1)
+dframe1.melt <- dframe1.melt[complete.cases(dframe1.melt[,8]),]
 
 # rename the remaining columns to original names
 colnames(dframe1.melt) <- c("SampleID","Family_Species","Date","Site","SlideNumber","PollenCount", "PollenType","PollenNumber")
 
+# view information about the columns
 str(dframe1.melt)
 
 # reformat the data into a matrix
@@ -80,8 +82,9 @@ matrix1 <- dcast(dframe1.melt, SampleID + Family_Species + Date +
 
 
 
-# this has added an extra column (I don't know why!) but let's delete it
-matrix1 <- matrix1[,c(1:6,8:80)]
+# this adds an extra blank column (I don't know why!) but let's delete it
+# if you apply this to a different dataset you'll need to check the number of columns and adjust as appropriate
+matrix1 <- matrix1[,c(1:6,8:78)]
 
 
 ### create a variable for fire/no fire.
@@ -96,12 +99,12 @@ matrix1$SamplingDay <- factor(matrix1$Date,
                               levels = levels(matrix1$Date),
                               labels = 1:21)
 
-# then create a new column including both Site and Date information
+# then create a new column including both Site and Date information, so each sample at each site has a unique level
 matrix1$Sample <- do.call(paste, c(matrix1[c("Site","SamplingDay")], sep = "_"))
 
 # finally, reorder the columns to put pollen variables after the new variables
 names(matrix1) # check what columns we have and what order
-matrix1 <- matrix1[,c(1:6,80:82,7:79)] # tell R what order to put them in
+matrix1 <- matrix1[,c(1:6,78:80,7:77)] # tell R what order to put them in
 names(matrix1) # check it's worked
 
 
@@ -116,7 +119,7 @@ write.table(matrix1, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 # now we want to produce a separate file with the data organised by each sampling session at each site
 # we will do this by aggregating samples from the same site and sampling session
 
-matrix1r <- matrix1[,c(3:4,9:82)]
+matrix1r <- matrix1[,c(3:4,9:80)]
 summary(matrix1r)
 
 
