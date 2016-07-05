@@ -31,11 +31,10 @@ summary(dframe1) # Check it's imported correctly
 ### prepare the data for network analysis
 
 # trim off extra columns
-dframe1r <- dframe1[,c(2,9:82)]
+dframe1r <- dframe1[,c(2,9:length(dframe1))]
 
 # change each interaction to a 1
-dframe1r[,3:75][dframe1r[,3:75] > 0] <- 1
-
+dframe1r[,3:length(dframe1r)][dframe1r[,3:length(dframe1r)] > 0] <- 1
 
 # summarise plant-insect interactions for each insect species within each sample
 # this produces semi-quantitative data - e.g. if two individuals of an insect species
@@ -54,6 +53,20 @@ dframes.prep <- lapply(dframes, prepare)
 # and now use 'prepare_networks' from the betalink package to convert these into the correct format for betalink (igraph)
 networks <- prepare_networks(dframes.prep)
 summary(networks)
+
+data.frame(B-div) <- network_betadiversity(networks)
+
+
+
+
+
+
+
+
+
+
+graph1 <- networks[1]
+plot(graph1)
 
 # measure dissimilarity between networks; there are 23 options for B-diversity measures but let's use the default
 distance <- beta_os_prime(networks)

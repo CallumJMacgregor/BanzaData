@@ -1,6 +1,6 @@
-########################################################
-####   Script for basic pollen transport analysis   ####
-########################################################
+###########################################################
+####   Script for pollen transport analysis by sample  ####
+###########################################################
 
 
 ### Clear the workspace
@@ -9,20 +9,19 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS","MuMIn","bbmle")
+j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS","MuMIn","glmmADMB")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't already loaded
 
-# for some reason the package glmmADMB won't install via the usual methods, so:
+# for some reason the package glmmADMB won't install via the usual methods, so if it's not already installed:
 #install.packages("R2admb")
 #install.packages("glmmADMB", 
 #                 repos=c("http://glmmadmb.r-forge.r-project.org/repos",
 #                         getOption("repos")),
 #                 type="source")
-library(glmmADMB)
 
 
 
@@ -31,54 +30,35 @@ source("CheckResidsFunction.R")
 
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
-dframe1<-read.table("Data/MatrixNoct.txt", header=TRUE)
+dframe1<-read.table("Data/SamplesNoct.txt", header=TRUE)
 
 summary(dframe1) # Check it's imported correctly
 
-### tell R that SampleID and SlideNumber should be treated as factors
-dframe1$SampleID <- factor(dframe1$SampleID)
-dframe1$SlideNumber <- factor(dframe1$SlideNumber)
+dframe1$Month<-ordered(dframe1$Month, levels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
 
-summary(dframe1)
+### total up the pollen grains for each sample
+dframe1$PollenCount <- rowSums(dframe1[c(9:76)])
 
-### total up the pollen grains for each insect
-dframe1$PollenLoad <- rowSums(dframe1[c(10:80)])
+### total up the number of pollen species for each sample (i.e. how many columns do not contain 0)
+dframe1$PollenTypes <- rowSums(dframe1[c(9:76)] != 0)
 
-### total up the number of pollen species for each insect (i.e. how many columns do not contain 0)
-dframe1$PollenTypes <- rowSums(dframe1[c(10:80)] != 0)
-
-### create a binary (yes/no) variable for whether each insect is carrying any pollen
-dframe1$PollenYN <- ifelse(dframe1$PollenTypes==0,0,1)
-
-# check it's worked
-dframe1$check <- ifelse(dframe1$PollenCount==dframe1$PollenYN,T,
-                        ifelse(dframe1$PollenYN==1 & dframe1$PollenCount>0, T,F))
-
-# if 100% TRUE it's worked - if not, something's wrong
-summary(dframe1$check)
-
-# remove the check column
-dframe1 <- dframe1[,c(1:83)]
-
-### create a subset dframe containing only the interactions
-interactions <- subset(dframe1, select=-c(SampleID,Date,Site,SlideNumber,PollenCount,Treatment,SamplingDay,Sample,PollenTypes,PollenLoad,PollenYN))
-summary(interactions)
 
 
 ### now you're ready to start looking for patterns!
-  
+
 
 
 ### Let's first look at pollen load per-moth
 ### Plot it against treatment so you have an idea of what to expect
-plot(PollenLoad ~ Treatment, data = dframe1)
-hist(dframe1$PollenLoad)
+plot(PollenCount ~ Treatment, data = dframe1)
+plot(PollenCount ~ Season, data = dframe1)
+hist(dframe1$PollenCount)
 
 ### Data clearly have lots of skew, so it's worth checking for overdispersion
 ### Simplest test is to compare the mean and variance. 
 ### In a regular Poisson distribution, mean ~= variance; if variance is much larger, data are overdispersed
-mean(dframe1$PollenLoad)
-var(dframe1$PollenLoad)
+mean(dframe1$PollenCount)
+var(dframe1$PollenCount)
 
 ### Data appear overdispersed, so we will try two types of model in addition to Poisson: quasi-Poisson, and negative binomial
 ### However no zeroes in data, so zero-inflated models would be inappropriate
@@ -91,8 +71,8 @@ var(dframe1$PollenLoad)
 
 # Poisson model using lme4
 
-model1P <- glmer(PollenLoad ~ Treatment # fixed effects
-                 + (1|Date) + (1|Site), # random effects
+model1P <- glmer(PollenCount ~ Treatment*Season # fixed effects
+                 + (1|Year) + (1|Site) + (1|Date), # random effects
                  family = poisson (link = "log"),
                  data = dframe1)
 
@@ -108,12 +88,12 @@ drop1(model1P, test="Chisq")
 # check the model's residuals
 # this custom function produces a selection of plots that you can scroll through to check that residuals look ok
 # you want residuals that are roughly normally distributed around zero with no obvious trends
-chkres(model1P)  # these residuals do appear to have a slight negative trend so they are not ideal
+chkres(model1P)  # surprisingly despite the overdispersion these residuals look ok
 
 
 # QuasiPoisson model using MASS
 
-model1Q <- glmmPQL(PollenLoad ~ Treatment,
+model1Q <- glmmPQL(PollenCount ~ Treatment,
                    random = list(~1|Date, ~1|Site),
                    family = quasipoisson (link = "log"),
                    data = dframe1)
@@ -124,26 +104,26 @@ Anova(model1Q, type="III")  # drop1 doesn't work properly with this model class 
 
 # check residuals
 # this function produces a subset of the previous plots that are available for this model class
-chkres.PQL(model1Q) # these look slightly better but still not great
+chkres.PQL(model1Q) # these look no better, no worse
 
 
 
 # Negative binomial model using lme4
 
-model1NB <- glmer.nb(PollenLoad ~ Treatment # fixed effects
+model1NB <- glmer.nb(PollenCount ~ Treatment # fixed effects
                      + (1|Date) + (1|Site), # random effects
                      data = dframe1)
 
 summary(model1NB)
 drop1(model1NB, test= "Chisq") # glmer.nb produces the same model class as glmer so we can treat it the same
 
-chkres(model1NB) # these are still not ideal but they're the best yet
+chkres(model1NB) # these are probably the worst yet
 
 ### choose from these candidate error families
-### we can see from the residuals that model1NB is the best option so we use this result
+### we can see from the residuals that model1P is the surprisingly the best option so we use this result
 
 
-### therefore Treatment does not significantly affect per-moth pollen load
+### therefore Treatment does significantly affects per-sample pollen count
 
 
 
@@ -151,6 +131,7 @@ chkres(model1NB) # these are still not ideal but they're the best yet
 ### Let's now look at pollen types per-moth
 ### Plot it against treatment so you have an idea of what to expect
 plot(PollenTypes ~ Treatment, data = dframe1)
+plot(PollenTypes ~ Season, data = dframe1)
 hist(dframe1$PollenTypes)
 
 ### Again data clearly have lots of skew, though not so bad, so it's worth checking for overdispersion
@@ -167,8 +148,8 @@ var(dframe1$PollenTypes)
 
 # Poisson model using lme4
 
-model2P <- glmer(PollenTypes ~ Treatment # fixed effects
-                 + (1|Date) + (1|Site), # random effects
+model2P <- glmer(PollenTypes ~ Treatment*Season # fixed effects
+                 + (1|Year) + (1|Site) + (1|Date), # random effects
                  family = poisson (link = "log"),
                  data = dframe1)
 
@@ -182,7 +163,7 @@ drop1(model2P, test="Chisq")
 
 
 # check the model's residuals
-chkres(model2P)  # these residuals do appear to have a very slight negative trend but probably nothing to worry about too much
+chkres(model2P)  # These look pretty good
 
 
 # QuasiPoisson model using MASS
@@ -197,7 +178,7 @@ summary(model2Q)
 Anova(model2Q, type="III")  # drop1 doesn't work properly with this model class so we use a Type III Anova instead
 
 # check residuals
-chkres.PQL(model2Q) # these look better in some ways, worse in others
+chkres.PQL(model2Q) # these also look fine
 
 
 # Negative binomial model using lme4
@@ -209,35 +190,33 @@ model2NB <- glmer.nb(PollenTypes ~ Treatment # fixed effects
 summary(model2NB)
 drop1(model2NB, test= "Chisq") # glmer.nb produces the same model class as glmer so we can treat it the same
 
-chkres(model2NB) # these are very similar to the Poisson residuals
+chkres(model2NB) # these are the worst of the three with indications of a trend
 
 ### choose from these candidate error families
-### the residuals are all similarly good. In this situation it's best to choose the simplest model - in this case, Poisson
+### the residuals for Poisson and Quasi-Poisson are similarly good.
+### In this situation it's best to choose the simplest model - in this case, Poisson
 
-### therefore Treatment does not significantly affect per-moth pollen types
-
-
-### finally, let's look at proportion of moths carrying pollen
-
-### Plot it against treatment so you have an idea of what to expect
-plot(PollenYN ~ Treatment, data = dframe1)
-hist(dframe1$PollenYN)
-
-### this data is definitely binomial, so we don't need to worry too much about model selection:
-
-model3B <- glmer(PollenYN~Treatment
-                 + (1|Date) + (1|Site),
-                 family = binomial (link = "logit"),
-                 data = dframe1)
-
-summary(model3B)
-drop1(model3B, test="Chi")
-
-
-# no significant effect on likelihood of a moth carrying pollen (unlike my street light study)
+### therefore Treatment does significantly affect per-sample pollen types
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+############################ development #########################
+
+
+dframe1c <- ddply(dframe1, .(Season,Month), numcolwise(sum))
+
+plot(PollenCount ~ Month, data = dframe1c)
