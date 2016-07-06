@@ -148,8 +148,8 @@ matrix1$Year <- ifelse(grepl("/04/2013",matrix1$Date),"1",
                               ifelse(grepl("/06/2013",matrix1$Date),"1",
                                      ifelse(grepl("/07/2013",matrix1$Date),"1",
                                             ifelse(grepl("/08/2013",matrix1$Date),"1",
-                ifelse(grepl("/09/2014",matrix1$Date),"3",
-                       ifelse(grepl("/10/2014",matrix1$Date),"3",
+                                                   ifelse(grepl("/09/2013",matrix1$Date),"1",
+                ifelse(grepl("/10/2014",matrix1$Date),"3",
                               ifelse(grepl("/11/2014",matrix1$Date),"3",
                                      ifelse(grepl("/12/2014",matrix1$Date),"3",
                                             ifelse(grepl("/01/2015",matrix1$Date),"3",
@@ -358,7 +358,7 @@ matrix3$Year <- ifelse(grepl("/04/2013",matrix3$Date),"1",
                               ifelse(grepl("/06/2013",matrix3$Date),"1",
                                      ifelse(grepl("/07/2013",matrix3$Date),"1",
                                             ifelse(grepl("/08/2013",matrix3$Date),"1",
-                                                   ifelse(grepl("/09/2014",matrix3$Date),"3",
+                                                   ifelse(grepl("/09/2013",matrix3$Date),"1",
                                                           ifelse(grepl("/10/2014",matrix3$Date),"3",
                                                                  ifelse(grepl("/11/2014",matrix3$Date),"3",
                                                                         ifelse(grepl("/12/2014",matrix3$Date),"3",
@@ -369,7 +369,6 @@ matrix3$Year <- ifelse(grepl("/04/2013",matrix3$Date),"1",
                                                                                                            ifelse(grepl("/05/2015",matrix3$Date),"3",
                                                                                                                   "2"))))))))))))))
 matrix3$Year <- factor(matrix3$Year)
-
 
 # check it's worked - there should be no values for Fail
 summary(matrix3$Season)
