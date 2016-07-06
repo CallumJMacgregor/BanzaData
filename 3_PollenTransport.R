@@ -52,6 +52,13 @@ dframe1$PollenTypes <- rowSums(dframe1[c(13:length(dframe1))] != 0)
 
 ### create a binary (yes/no) variable for whether each insect is carrying any pollen
 dframe1$PollenYN <- ifelse(dframe1$PollenTypes==0,0,1)
+summary(dframe1$PollenYN)
+
+dframe1B <- dframe1[dframe1$Treatment=="Fire",]
+dframe1U <- dframe1[dframe1$Treatment=="NoFire",]
+
+summary(dframe1B$PollenYN)
+summary(dframe1U$PollenYN)
 
 
 ### create a subset dframe containing only the interactions
