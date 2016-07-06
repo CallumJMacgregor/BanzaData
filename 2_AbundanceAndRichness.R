@@ -203,12 +203,67 @@ dframe4r$SpeciesRichness <- ifelse(dframe4r$PlantSpecies=="none",0,1)
 # summarise the dataframe to how many individuals of each species in each sample
 dframe5 <- ddply(dframe4r, .(Date,Site,Transect,Treatment,Sample,Season,Month,Year), numcolwise(sum))
 
+dframe5$Month <- ordered(dframe5$Month, levels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+
 summary(dframe5)
 
 
+# Floral abundance
+plot(PlantCoverage ~ Treatment, dframe5)
+plot(PlantCoverage ~ Season, dframe5)
+plot(PlantCoverage ~ Month, dframe5)
+plot(PlantCoverage ~ interaction(Treatment,Season), dframe5)
 
 hist(dframe5$PlantCoverage)
+
+# possibly overdispersion (but not sure...)
+mean(dframe5$PlantCoverage)
+var(dframe5$PlantCoverage)  # var > mean therefore data are overdispersed
+
+
+# Poisson model
+model5P <- glmer(PlantCoverage ~ Treatment*Season
+                 + (1|Year) + (1|Site) + (1|Date),
+                 family = poisson (link="log"),
+                 data = dframe5)
+
+summary(model5P)
+drop1(model5P, test = "Chi")
+
+chkres(model5P)
+
+
+# Floral Species Richness
+plot(SpeciesRichness ~ Treatment, dframe5)
+plot(SpeciesRichness ~ Season, dframe5)
+plot(SpeciesRichness ~ Month, dframe5)
+plot(SpeciesRichness ~ interaction(Treatment,Season), dframe5)
+
 hist(dframe5$SpeciesRichness)
+
+# possibly overdispersion (but not sure...)
+mean(dframe5$SpeciesRichness)
+var(dframe5$SpeciesRichness)  # var > mean therefore data are overdispersed
+
+
+# Poisson model
+model6P <- glmer(SpeciesRichness ~ Treatment*Season
+                 + (1|Year) + (1|Site) + (1|Date),
+                 family = poisson (link="log"),
+                 data = dframe5)
+
+summary(model6P)
+drop1(model6P, test = "Chi")
+
+chkres(model6P)
+
+
+
+
+
+
+
+
 
 ##################development###################
 
