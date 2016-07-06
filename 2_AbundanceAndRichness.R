@@ -27,6 +27,8 @@ library(glmmADMB)
 source("CheckResidsFunction.R")
 
 
+### Moths
+
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
 dframe1<-read.table("Data/MatrixNoct.txt", header=TRUE)
 
@@ -179,6 +181,34 @@ drop1(model2P, test="Chisq")
 chkres(model2P)  # these residuals do appear to have a slight negative trend so they are not ideal
 
 
+
+### Plants
+
+### read in the data - this is the .txt file you produced in the PreparingData.R script. 
+dframe4<-read.table("Data/PlantTransects.txt", header=TRUE)
+
+dframe4$Year <- factor(dframe4$Year)
+summary(dframe4)
+
+
+# We don't need the individual TransectID for this analysis, so get rid of it:
+
+dframe4r <- dframe4[,c(2:14)]
+summary(dframe4r)
+
+# each row currently contains 1 plant species, so add a column for "Count"; 
+# this is 1 in every instance except the transect with zero insects
+dframe4r$SpeciesRichness <- ifelse(dframe4r$PlantSpecies=="none",0,1)
+
+# summarise the dataframe to how many individuals of each species in each sample
+dframe5 <- ddply(dframe4r, .(Date,Site,Transect,Treatment,Sample,Season,Month,Year), numcolwise(sum))
+
+summary(dframe5)
+
+
+
+hist(dframe5$PlantCoverage)
+hist(dframe5$SpeciesRichness)
 
 ##################development###################
 

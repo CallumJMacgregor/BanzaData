@@ -296,15 +296,8 @@ colnames(dframe2.melt) <- c("TransectID","Date","Site","Transect","PercentCovera
 str(dframe2.melt)
 
 # reformat the data into a matrix
-matrix3 <- dcast(dframe2.melt, TransectID + Date + Site + Transect +
-                   PercentCoverage + AverageHeight_cm ~ PlantSpecies,
-                 value.var = "PlantCoverage",
-                 fun.aggregate = sum)
+matrix3 <- dframe2.melt
 
-
-
-# this adds an extra blank column (I don't know why!) and a column for zero; let's delete them now
-matrix3 <- matrix3[,c(1:6,8:length(matrix3))]
 
 
 ### create a variable for fire/no fire.
@@ -383,10 +376,12 @@ summary(matrix3$Season)
 summary(matrix3$Month)
 summary(matrix3$Year)
 
+matrix3$PlantSpecies <- ifelse(matrix3$PlantCoverage==0,"none",matrix3$PlantSpecies)
+
 
 # finally, reorder the columns to put pollen variables after the new variables
 names(matrix3) # check what columns we have and what order
-matrix3 <- matrix3[,c(1:6,78:83,7:77)] # tell R what order to put them in
+matrix3 <- matrix3[,c(1:6,9:14,7:8)] # tell R what order to put them in
 names(matrix3) # check it's worked
 
 
