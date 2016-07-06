@@ -212,6 +212,7 @@ summary(dframe5)
 plot(PlantCoverage ~ Treatment, dframe5)
 plot(PlantCoverage ~ Season, dframe5)
 plot(PlantCoverage ~ Month, dframe5)
+plot(PlantCoverage ~ Year, dframe5)
 plot(PlantCoverage ~ interaction(Treatment,Season), dframe5)
 
 hist(dframe5$PlantCoverage)
@@ -222,8 +223,8 @@ var(dframe5$PlantCoverage)  # var > mean therefore data are overdispersed
 
 
 # Poisson model
-model5P <- glmer(PlantCoverage ~ Treatment*Season
-                 + (1|Year) + (1|Site) + (1|Date),
+model5P <- glmer(PlantCoverage ~ Treatment*Season*Year
+                 + (1|Site) + (1|Date),
                  family = poisson (link="log"),
                  data = dframe5)
 
