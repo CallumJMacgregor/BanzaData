@@ -247,6 +247,18 @@ chkres(model2QP,SiteSR.full$Treatment,SiteSR.full$Season)
 # by treatment
 summary(TreatmentSR.full)
 
+# in order for this to be treated as a paired test we need to create a factor with a unique level for each exact season
+
+# first break the TreatmentSeason variable up at the _ breaks
+TreatmentSR.full <- separate(data = TreatmentSR.full, col = TreatmentSeason, into = c("Treatment1", "ExactSeason","Year"), sep = "_")
+
+# then stitch the Season and Year components back together
+TreatmentSR.full$ExactSeason <- do.call(paste, c(TreatmentSR.full[c("ExactSeason","Year")], sep = "_"))
+TreatmentSR.full$ExactSeason <- as.factor(TreatmentSR.full$ExactSeason)
+
+# get rid of the columns we don't need
+TreatmentSR.full <- TreatmentSR.full[,c(1:3,5,7:length(TreatmentSR.full))]
+
 plot(chao ~ Treatment, TreatmentSR.full)
 plot(chao ~ Season, TreatmentSR.full)
 plot(chao ~ interaction(Treatment,Season), TreatmentSR.full)
@@ -255,8 +267,12 @@ plot(chao ~ interaction(Treatment,Season), TreatmentSR.full)
 hist(TreatmentSR.full$chao) # this definitely looks like Poisson - but values are non-integer
 # it's also not horribly different to a Gaussian
 
-model3G <- glm(chao ~ Treatment*Season,
-               data=TreatmentSR.full)
+# Gaussian
+# random effect of the ExactSeason variable lets model treat this as a paired test
+
+model3G <- lmer(chao ~ Treatment*Season
+                + (1|ExactSeason),
+                data=TreatmentSR.full)
 
 summary(model3G)
 drop1(model3G, test = "Chi")
@@ -266,28 +282,28 @@ chkres(model3G,TreatmentSR.full$Treatment,TreatmentSR.full$Season) # some imbala
 # interaction non-sig so let's try without
 
 
-model3Ga <- glm(chao ~ Treatment + Season,
-                data=TreatmentSR.full)
+model3Ga <- lmer(chao ~ Treatment + Season
+                 +(1|ExactSeason),
+                 data=TreatmentSR.full)
 
 summary(model3Ga)
 drop1(model3Ga, test = "Chi")
 
-chkres(model3Ga,TreatmentSR.full$Treatment,TreatmentSR.full$Season) 
+chkres(model3Ga,TreatmentSR.full$Treatment,TreatmentSR.full$Season)
+# slightly better though still some imbalance in Season, also residuals are not normally distributed
 
-
-
-# slightly better though still some imbalance in Season
 
 # try a quasipoisson
 
-model3QP <- glm(chao ~ Treatment + Season,
-                family = quasipoisson (link = "log"),
-                data=TreatmentSR.full)
+model3QP <- glmmPQL(chao ~ Treatment + Season,
+                    random = ~1|ExactSeason,
+                    family = quasipoisson (link = "log"),
+                    data=TreatmentSR.full)
 
 summary(model3QP)
-drop1(model3QP, test = "Chi")
+Anova(model3QP, type = "III")
 
-chkres(model3QP,TreatmentSR.full$Treatment,TreatmentSR.full$Season)
+chkres.PQL(model3QP,TreatmentSR.full$Treatment,TreatmentSR.full$Season)
 
 # still would be nice to try it as a Poisson, so let's try rounding SR estimates to the nearest integer
 
@@ -302,27 +318,33 @@ hist(TreatmentSR.full$chao.int) # this definitely looks like Poisson - and value
 mean(TreatmentSR.full$chao.int)
 var(TreatmentSR.full$chao.int)
 
-model3P <- glm(chao.int ~ Treatment * Season,
-               family = poisson (link = "log"),
-               data = TreatmentSR.full)
+model3P <- glmer(chao.int ~ Treatment * Season
+                 +(1|ExactSeason),
+                 family = poisson (link = "log"),
+                 data = TreatmentSR.full)
 
 summary(model3P)
 drop1(model3P, test = "Chi")
 
-chkres(model3P,TreatmentSR.full$Treatment,TreatmentSR.full$Season) # these aren't terrible
+chkres(model3P,TreatmentSR.full$Treatment,TreatmentSR.full$Season) # these aren't terrible but not perfect either
 
 
 # try a neg binom as this looks a tad overdispersed
 
-model3NB <- glm.nb(chao.int ~ Treatment + Season,
-                   data = TreatmentSR.full)
+model3NB <- glmer.nb(chao.int ~ Treatment + Season
+                     +(1|ExactSeason),
+                     data = TreatmentSR.full)
+
+chkconv(model3NB)
 
 summary(model3NB)
 drop1(model3NB, test = "Chi")
 
 chkres(model3NB,TreatmentSR.full$Treatment,TreatmentSR.full$Season)
 
-
+# Poisson is the most appropriate model in theory and the fit is acceptable, so we proceed with it.
+summary(model3P)
+drop1(model3P, test = "Chi")
 
 
 
@@ -462,6 +484,20 @@ chkres(model4QP,SitePSR.full$Treatment,SitePSR.full$Season)  # really decent fit
 
 summary(TreatmentPSR.full)
 
+# in order for this to be treated as a paired test we need to create a factor with a unique level for each exact season
+
+# first break the TreatmentSeason variable up at the _ breaks
+TreatmentPSR.full <- separate(data = TreatmentPSR.full, col = TreatmentSeason, into = c("Treatment1", "ExactSeason","Year"), sep = "_")
+
+# then stitch the Season and Year components back together
+TreatmentPSR.full$ExactSeason <- do.call(paste, c(TreatmentPSR.full[c("ExactSeason","Year")], sep = "_"))
+TreatmentPSR.full$ExactSeason <- as.factor(TreatmentPSR.full$ExactSeason)
+
+# get rid of the columns we don't need
+TreatmentPSR.full <- TreatmentPSR.full[,c(1:3,5,7:length(TreatmentPSR.full))]
+
+
+
 plot(chao ~ Treatment, TreatmentPSR.full)
 plot(chao ~ Season, TreatmentPSR.full)
 plot(chao ~ interaction(Treatment,Season), TreatmentPSR.full)
@@ -470,22 +506,179 @@ plot(chao ~ interaction(Treatment,Season), TreatmentPSR.full)
 hist(TreatmentPSR.full$chao)
 hist(log(TreatmentPSR.full$chao,10))
 
-model5QP <- glm(chao ~ Treatment + Season,
-                family = quasipoisson (link = "log"),
-                data=TreatmentPSR.full)
+model5QP <- glmmPQL(chao ~ Treatment + Season,
+                    random = ~1|ExactSeason,
+                    family = quasipoisson (link = "log"),
+                    data=TreatmentPSR.full)
 
 summary(model5QP)
-drop1(model5QP, test = "Chi")
+Anova(model5QP, type = "III")
 
-chkres(model5QP,TreatmentPSR.full$Treatment,TreatmentPSR.full$Season)  # really terrible fit here!
+chkres.PQL(model5QP,TreatmentPSR.full$Treatment,TreatmentPSR.full$Season)  # not tooo bad!
 
 
-model5G <- glm(log(chao,10) ~ Treatment + Season,
-               data=TreatmentPSR.full)
+
+model5G <- lmer(log(chao,10) ~ Treatment * Season
+                + (1|ExactSeason),
+                data=TreatmentPSR.full)
 
 summary(model5G)
 drop1(model5G, test = "Chi")
 
 chkres(model5G,TreatmentSR.full$Treatment,TreatmentSR.full$Season) # not bad
+
+
+# try it as a Poisson, so let's try rounding SR estimates to the nearest integer
+
+TreatmentPSR.full$chao.int <- round(TreatmentPSR.full$chao, digits = 0)
+
+plot(chao.int ~ Treatment, TreatmentPSR.full)
+plot(chao.int ~ Season, TreatmentPSR.full)
+plot(chao.int ~ interaction(Treatment,Season), TreatmentPSR.full)
+
+
+hist(TreatmentPSR.full$chao.int) # this definitely looks like Poisson - and values are now integer
+mean(TreatmentPSR.full$chao.int)
+var(TreatmentPSR.full$chao.int)
+
+model5P <- glmer(chao.int ~ Treatment * Season
+                 +(1|ExactSeason),
+                 family = poisson (link = "log"),
+                 data = TreatmentPSR.full)
+
+summary(model5P)
+drop1(model5P, test = "Chi")
+
+chkres(model5P,TreatmentPSR.full$Treatment,TreatmentPSR.full$Season) # these aren't terrible but not perfect either
+
+
+
+
+
+
+
+
+
+### Community dissimilarity using Adonis (vegan)
+
+
+
+### Moths
+
+# we need the data in the original matrix format
+summary(matrix1)
+
+rownames(matrix1) <- matrix1$Sample
+
+# but let's trim off some of the excess columns - we only need Treatment, Season and Site
+matrix1d <- matrix1[,c(2:3,5,10:length(matrix1))]
+
+# we need to get rid of any rows with zeroes in this time
+matrix1d$Total <- rowSums(matrix1d[,c(4:length(matrix1d))])
+
+summary(matrix1d$Total)
+
+matrix1ds <- subset(matrix1d,matrix1d$Total>0)
+
+# we also need a version with all factor columns removed
+community1 <- matrix1ds[,c(4:330)]
+
+# first we want to visualise things so as to know what to expect
+mod1 <- metaMDS(community1)
+
+MothsTreat <- plot(mod1)
+ordihull(mod1, group=matrix1ds$Treatment, show="Fire")
+ordihull(mod1, group=matrix1ds$Treatment, show="NoFire")
+
+MothsSeason <- plot(mod1)
+ordihull(mod1, group=matrix1ds$Season, show="Spring")
+ordihull(mod1, group=matrix1ds$Season, show="Summer")
+ordihull(mod1, group=matrix1ds$Season, show="Autumn")
+ordihull(mod1, group=matrix1ds$Season, show="Winter")
+
+
+# based on these plots there may be an effect of Treatment and there almost certainly will be an effect of Season
+
+# now we use adonis to test the dissimilarities between communities in different samples
+# we will ask it to test for effects of Treatment and Season (and an interaction), constraining permutations to within Sites
+# we'll set the method as Bray-Curtis
+
+AdMoths <- adonis(community1 ~ Treatment*Season,
+                  data = matrix1ds,
+                  strata = matrix1ds$Site,
+                  method = "bray",
+                  perm=1e5)
+
+AdMoths
+
+# interaction non-significant but repeating without doesn't really change things
+
+
+
+
+### Plants
+
+
+# we need the data in the original matrix format
+summary(matrix2)
+
+
+# but let's trim off some of the excess columns - we only need Treatment, Season and Site
+matrix2d <- matrix2[,c(2:3,5,10:length(matrix2))]
+
+
+
+
+
+# we need to get rid of any rows with zeroes in this time
+matrix2d$Total <- rowSums(matrix2d[,c(4:length(matrix2d))])
+
+summary(matrix2d$Total)
+
+matrix2ds <- subset(matrix2d,matrix2d$Total>0)
+
+
+
+
+
+# we also need a version with all factor columns removed
+community2 <- matrix2ds[,c(4:74)]
+community2[is.na(community2)] <- 0
+
+
+# first we want to visualise things so as to know what to expect
+mod2 <- metaMDS(community2)
+
+FlowersTreat <- plot(mod2)
+ordihull(mod2, group=matrix2ds$Treatment, show="Fire")
+ordihull(mod2, group=matrix2ds$Treatment, show="NoFire")
+
+MothsSeason <- plot(mod2)
+ordihull(mod2, group=matrix2ds$Season, show="Spring")
+ordihull(mod2, group=matrix2ds$Season, show="Summer")
+ordihull(mod2, group=matrix2ds$Season, show="Autumn")
+ordihull(mod2, group=matrix2ds$Season, show="Winter")
+
+# these plots aren't that informative!
+
+# now we use adonis to test the dissimilarities between communities in different samples
+# we will ask it to test for effects of Treatment and Season (and an interaction), constraining permutations to within Sites
+# we'll set the method as Bray-Curtis
+
+AdFlowers <- adonis(community2 ~ Treatment*Season,
+                  data = matrix2ds,
+                  strata = matrix2ds$Site,
+                  method = "bray",
+                  perm=1e5)
+
+AdFlowers
+
+
+
+
+
+
+############################ development ##################################
+
 
 
