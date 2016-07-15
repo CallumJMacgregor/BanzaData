@@ -427,6 +427,17 @@ chkres(model6G,dframe5SR$Treatment,dframe5SR$Season) # these are not terrible, t
 
 ##################development###################
 
+
+
+
+
+
+
+
+
+
+
+
 dframe3Sum <- dframe3[dframe3$Season=="Summer",]
 dframe3Spr <- dframe3[dframe3$Season=="Spring",]
 dframe3Win <- dframe3[dframe3$Season=="Winter",]
@@ -447,3 +458,10 @@ drop1(modelWinP, test="Chi")
 plot(SpeciesRichness ~ Treatment, dframe3Sum)
 plot(SpeciesRichness ~ Treatment, dframe3Spr)
 plot(SpeciesRichness ~ Treatment, dframe3Win)
+
+
+
+
+
+
+
