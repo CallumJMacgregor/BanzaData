@@ -596,10 +596,7 @@ ordihull(mod1, group=matrix1ds$Season, show="Summer")
 ordihull(mod1, group=matrix1ds$Season, show="Autumn")
 ordihull(mod1, group=matrix1ds$Season, show="Winter")
 
-<<<<<<< HEAD
 
-=======
->>>>>>> a9f0f32237963c4baf4315babbf86dce32c2d398
 # based on these plots there may be an effect of Treatment and there almost certainly will be an effect of Season
 
 # now we use adonis to test the dissimilarities between communities in different samples
