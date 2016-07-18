@@ -26,8 +26,8 @@ lapply(j, require, character.only = TRUE)  # loads up any libraries that aren't 
 
 
 ### load up Callum's custom set of functions
-source("CheckResidsFunction.R")
-
+k <- c("CheckResidsFunction.R","CheckConvergenceFunction.R")
+lapply(k,source)
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
 dframe1<-read.table("Data/SamplesNoct.txt", header=TRUE)
@@ -53,6 +53,7 @@ dframe1$PollenTypes <- rowSums(dframe1[c(9:76)] != 0)
 plot(PollenCount ~ Treatment, data = dframe1)
 plot(PollenCount ~ Season, data = dframe1)
 hist(dframe1$PollenCount)
+hist(log(dframe1$PollenCount+1,10))
 
 ### Data clearly have lots of skew, so it's worth checking for overdispersion
 ### Simplest test is to compare the mean and variance. 
@@ -81,20 +82,20 @@ summary(model1P)
 
 # the best test of a GLMM is a Likelihood Ratio Test, which compares the fit of the model to if each term was removed one at a time using Chi-squared tests
 # to run an LRT, use the drop1 function (i.e. drop 1 term at a time), specifying Chi-squared
-drop1(model1P, test="Chisq")  
+drop1(model1P, test="Chi")  
 
 
 
 # check the model's residuals
 # this custom function produces a selection of plots that you can scroll through to check that residuals look ok
 # you want residuals that are roughly normally distributed around zero with no obvious trends
-chkres(model1P)  # surprisingly despite the overdispersion these residuals look ok
+chkres(model1P, dframe1$Treatment, dframe1$Season)  # surprisingly despite the overdispersion these residuals look ok-ish
 
 
 # QuasiPoisson model using MASS
 
-model1Q <- glmmPQL(PollenCount ~ Treatment,
-                   random = list(~1|Date, ~1|Site),
+model1Q <- glmmPQL(PollenCount ~ Treatment * Season,
+                   random = list(~1|Year, ~1|Site, ~1|Date),
                    family = quasipoisson (link = "log"),
                    data = dframe1)
 
@@ -104,26 +105,50 @@ Anova(model1Q, type="III")  # drop1 doesn't work properly with this model class 
 
 # check residuals
 # this function produces a subset of the previous plots that are available for this model class
-chkres.PQL(model1Q) # these look no better, no worse
+chkres.PQL(model1Q, dframe1$Treatment, dframe1$Season) # these look worse
 
 
 
 # Negative binomial model using lme4
 
-model1NB <- glmer.nb(PollenCount ~ Treatment # fixed effects
-                     + (1|Date) + (1|Site), # random effects
+model1NB <- glmer.nb(PollenCount ~ Treatment * Season # fixed effects
+                     + (1|Year) + (1|Site) + (1|Date), # random effects
                      data = dframe1)
 
-summary(model1NB)
-drop1(model1NB, test= "Chisq") # glmer.nb produces the same model class as glmer so we can treat it the same
+chkconv(model1NB)
 
-chkres(model1NB) # these are probably the worst yet
+summary(model1NB)
+drop1(model1NB, test= "Chi") # glmer.nb produces the same model class as glmer so we can treat it the same
+
+chkres(model1NB, dframe1$Treatment, dframe1$Season) # these are almost ok but there does seem to be a positive trend at low values
+
+
+# Gaussian with log transformation
+
+model1G <- lmer(log(PollenCount+1,10) ~ Treatment * Season
+                + (1|Year) + (1|Site) + (1|Date),
+                data = dframe1)
+
+summary(model1G)
+drop1(model1G, test = "Chi")
+
+chkres(model1G, dframe1$Treatment, dframe1$Season) # these are the best so far, but interaction is non-significant so try without
+
+
+model1Ga <- lmer(log(PollenCount+1,10) ~ Treatment + Season
+                 + (1|Year) + (1|Site) + (1|Date),
+                 data = dframe1)
+
+summary(model1Ga)
+drop1(model1Ga, test = "Chi")
+
+chkres(model1Ga, dframe1$Treatment, dframe1$Season) # these are the best so far
+
+
+
 
 ### choose from these candidate error families
-### we can see from the residuals that model1P is the surprisingly the best option so we use this result
-
-
-### therefore Treatment does significantly affects per-sample pollen count
+### we can see from the residuals that model1Ga is the best option
 
 
 
@@ -132,18 +157,17 @@ chkres(model1NB) # these are probably the worst yet
 ### Plot it against treatment so you have an idea of what to expect
 plot(PollenTypes ~ Treatment, data = dframe1)
 plot(PollenTypes ~ Season, data = dframe1)
+plot(PollenTypes ~ interaction(Treatment,Season), data = dframe1)
 hist(dframe1$PollenTypes)
+hist(log(dframe1$PollenTypes+1,10))
 
-### Again data clearly have lots of skew, though not so bad, so it's worth checking for overdispersion
+### Again data clearly have lots of skew, though it does look quite like a standard poisson, so it's worth checking for overdispersion
 ### Simplest test is to compare the mean and variance. 
 ### In a regular Poisson distribution, mean ~= variance; if variance is much larger, data are overdispersed
 mean(dframe1$PollenTypes)
 var(dframe1$PollenTypes)
 
-### Data appear possibly overdispersed, so we will try two types of model in addition to Poisson: quasi-Poisson, and negative binomial
-### However no zeroes in data, so zero-inflated models would be inappropriate
-
-# construct models using Date and Site as random effects
+# construct models using Year and Site and Date as random effects
 
 
 # Poisson model using lme4
@@ -158,18 +182,18 @@ summary(model2P)
 
 # the best test of a GLMM is a Likelihood Ratio Test, which compares the fit of the model to if each term was removed one at a time using Chi-squared tests
 # to run an LRT, use the drop1 function (i.e. drop 1 term at a time), specifying Chi-squared
-drop1(model2P, test="Chisq")  
+drop1(model2P, test="Chi")  
 
 
 
 # check the model's residuals
-chkres(model2P)  # These look pretty good
+chkres(model2P, dframe1$Treatment, dframe1$Season)  # These look pretty good but there's a hint of skew
 
 
 # QuasiPoisson model using MASS
 
-model2Q <- glmmPQL(PollenTypes ~ Treatment,
-                   random = list(~1|Date, ~1|Site),
+model2Q <- glmmPQL(PollenTypes ~ Treatment * Season,
+                   random = list(~1|Year, ~1|Site, ~1|Date),
                    family = quasipoisson (link = "log"),
                    data = dframe1)
 
@@ -178,25 +202,36 @@ summary(model2Q)
 Anova(model2Q, type="III")  # drop1 doesn't work properly with this model class so we use a Type III Anova instead
 
 # check residuals
-chkres.PQL(model2Q) # these also look fine
+chkres.PQL(model2Q, dframe1$Treatment, dframe1$Season) # these are pretty good
 
 
 # Negative binomial model using lme4
 
-model2NB <- glmer.nb(PollenTypes ~ Treatment # fixed effects
-                     + (1|Date) + (1|Site), # random effects
+model2NB <- glmer.nb(PollenTypes ~ Treatment * Season # fixed effects
+                     + (1|Year) + (1|Site) + (1|Date), # random effects
                      data = dframe1)
 
 summary(model2NB)
 drop1(model2NB, test= "Chisq") # glmer.nb produces the same model class as glmer so we can treat it the same
 
-chkres(model2NB) # these are the worst of the three with indications of a trend
+chkres(model2NB, dframe1$Treatment, dframe1$Season) # these are the worst of the three with indications of a trend
+
+
+# Gaussian with log transformation
+
+model2G <- lmer(log(PollenTypes+1,10) ~ Treatment * Season
+                + (1|Year) + (1|Site) + (1|Date),
+                data = dframe1)
+
+summary(model2G)
+drop1(model2G, test = "Chi")
+
+chkres(model2G, dframe1$Treatment, dframe1$Season)
+
 
 ### choose from these candidate error families
-### the residuals for Poisson and Quasi-Poisson are similarly good.
-### In this situation it's best to choose the simplest model - in this case, Poisson
+### the residuals for Gaussian are slightly better than those for quasipoisson therefore use model2G
 
-### therefore Treatment does significantly affect per-sample pollen types
 
 
 
