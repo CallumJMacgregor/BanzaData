@@ -85,7 +85,6 @@ summary(model1P)
 drop1(model1P, test="Chi")  
 
 
-
 # check the model's residuals
 # this custom function produces a selection of plots that you can scroll through to check that residuals look ok
 # you want residuals that are roughly normally distributed around zero with no obvious trends
