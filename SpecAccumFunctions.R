@@ -1,4 +1,4 @@
-sacplot <- function(x) {
+sacplot <- function(x,cols) {
   p <- c("vegan")
   packages <- p[!(p %in% installed.packages()[,"Package"])]
   if(length(packages)) {
@@ -6,13 +6,13 @@ sacplot <- function(x) {
   } else {
       lapply(p, require, character.only = TRUE)
   }
-  x <- x[,-c(1:9)]
+  x <- x[,-c(1:cols)]
   sac <- specaccum(x)
   plot(sac, ci.type="polygon",ci.col="yellow")
 }
 
 
-samplebased <- function(x) {
+samplebased <- function(x,cols) {
   p <- c("vegan")
   packages <- p[!(p %in% installed.packages()[,"Package"])]
   if(length(packages)) {
@@ -20,13 +20,13 @@ samplebased <- function(x) {
   } else {
     lapply(p, require, character.only = TRUE)
   }
-  x <- x[,-c(1:9)]
+  x <- x[,-c(1:cols)]
   SR <- estimateR(x)
   return(SR)
 }
 
 
-sitebased <- function(x) {
+sitebased <- function(x,cols) {
   p <- c("vegan")
   packages <- p[!(p %in% installed.packages()[,"Package"])]
   if(length(packages)) {
@@ -34,7 +34,7 @@ sitebased <- function(x) {
   } else {
     lapply(p, require, character.only = TRUE)
   }
-  x <- x[,-c(1:9)]
+  x <- x[,-c(1:cols)]
   SR <- t(specpool(x))
   return(SR)
 }

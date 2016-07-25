@@ -93,11 +93,11 @@ matrix1a <- matrix1[,-c(1:9)]
 matrices1 <- split(matrix1, list(matrix1$SiteSeason))  # this creates a list of smaller dframes, one for each level of sample
 
 # first let's use another of Callum's custom functions to plot all the species accumulation curves
-lapply(matrices1, sacplot)
+lapply(matrices1, sacplot, cols=9)
 
 # let's also try for each site irrespective of season
 matrices2 <- split(matrix1, list(matrix1$Site))  # this creates a list of smaller dframes, one for each level of sample
-lapply(matrices2, sacplot)
+lapply(matrices2, sacplot, cols=9)
 
 
 
@@ -106,7 +106,7 @@ lapply(matrices2, sacplot)
 # therefore we need to extrapolate species richness
 # first try sample-based - doing it for every sample based on abundance within the sample
 matrices3 <- split(matrix1, list(matrix1$Sample))
-SampleSR <- lapply(matrices3, samplebased)
+SampleSR <- lapply(matrices3, samplebased, cols=9)
 
 ### we now have a list of dataframes, each one containing the sample-level SR of one sample
 
@@ -141,7 +141,7 @@ SampleSR.full <- merge(dframeP, SampleSR.merge, by=0)
 
 
 # now try site-based - doing it for every site based on repeated sampling at the site
-SiteSR <- lapply(matrices1, sitebased)
+SiteSR <- lapply(matrices1, sitebased, cols=9)
 
 ### we now have a list of dataframes, each one containing the sample-level SR of one sample
 
@@ -171,7 +171,7 @@ SiteSR.full <- merge(dframePS, SiteSR.merge, by=0)
 
 # finally try by Treatment + Season (18 paired samples)
 matrices4 <- split(matrix1, list(matrix1$TreatmentSeason))
-TreatmentSR <- lapply(matrices4, sitebased)
+TreatmentSR <- lapply(matrices4, sitebased, cols=9)
 
 ### we now have a list of dataframes, each one containing the sample-level SR of one sample
 
