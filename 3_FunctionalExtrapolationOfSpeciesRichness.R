@@ -9,7 +9,7 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS","plyr","reshape2","vegan")
+j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS","plyr","reshape2","vegan","tidyr")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -68,15 +68,16 @@ dframe2 <- ddply(dframe1r, .(Family_Species,Site,Treatment,Date,Sample,Season,Mo
 dframe2$SiteSeason <- do.call(paste, c(dframe2[c("Site","Season")], sep = "_"))
 dframe2$SiteSeason <- as.factor(dframe2$SiteSeason)
 
-dframe2$TreatmentSeason <- do.call(paste, c(dframe2[c("Treatment","Season","Year")], sep = "_"))
-dframe2$TreatmentSeason <- as.factor(dframe2$TreatmentSeason)
+dframe2$ExactSeason <- do.call(paste, c(dframe2[c("Season","Year","Treatment")], sep = "_"))
+dframe2$ExactSeason <- as.factor(dframe2$ExactSeason)
+
 
 # dframe2 contains information of how many of each species are in each sample
 # we'll need this information in a matrix format though
 
 
 matrix1 <- dcast(dframe2, Date + Site + Treatment
-                 + Sample + Season + Month + Year + SiteSeason + TreatmentSeason
+                 + Sample + Season + Month + Year + SiteSeason + ExactSeason
                  ~ Family_Species,
                  value.var = "Count",
                  fun.aggregate = sum)
@@ -169,8 +170,8 @@ SiteSR.full <- merge(dframePS, SiteSR.merge, by=0)
 
 
 
-# finally try by Treatment + Season (18 paired samples)
-matrices4 <- split(matrix1, list(matrix1$TreatmentSeason))
+# finally try by ExactSeason (18 paired samples)
+matrices4 <- split(matrix1, list(matrix1$ExactSeason))
 TreatmentSR <- lapply(matrices4, sitebased, cols=9)
 
 ### we now have a list of dataframes, each one containing the sample-level SR of one sample
@@ -185,21 +186,34 @@ TreatmentSR.merge <- data.frame(t(TreatmentSR.merge))
 ### all this information is held within the sample-level pollen dataframe:
 # but it needs collapsing to the same number of sites
 dframePST <- matrix1[,c(1:10)]
-dframePST <- ddply(dframePST, .(Treatment,Season,TreatmentSeason), numcolwise(sum))
+dframePST <- ddply(dframePST, .(Treatment,Season,ExactSeason), numcolwise(sum))
 dframePST <- dframePST[,c(1:3)]
 
 # for merge to work, we need to set the row names
-rownames(dframePST) <- dframePST$TreatmentSeason
+rownames(dframePST) <- dframePST$ExactSeason
 
 # now we merge the two dataframes together by row name, using 'by=0' (column 0 is the row names)
 TreatmentSR.full <- merge(dframePST, TreatmentSR.merge, by=0)
 
 
+### as an aside, we want to calculate sampling completeness here
+# this is just observed species/extrapolated species *100
+
+TreatmentSR.full$completeness <- (TreatmentSR.full$Species*100)/TreatmentSR.full$chao
+
+# we want an average sampling completeness across all networks as well
+summary(TreatmentSR.full$completeness)
+mean(TreatmentSR.full$completeness, na.rm=T)
+
+# let's also do a weighted interaction completeness - more attention is paid to more species-rich networks?
+
+weighted.mean(TreatmentSR.full$completeness, TreatmentSR.full$chao, na.rm=T)
 
 
-### let's analyse each of these in turn, using the Chao1 estimated SR
 
-# first by sample
+### now, back to the analysis... let's analyse each of these in turn
+
+# first by sample, using the Chao1 estimated SR
 summary(SampleSR.full)
 
 hist(SampleSR.full$S.chao1)
@@ -221,7 +235,7 @@ chkres(model1G,SampleSR.full$Treatment,SampleSR.full$Season)  # these are actual
 
 
 
-# by site
+# by site, using Chao2
 summary(SiteSR.full)
 
 plot(chao ~ Treatment, SiteSR.full)
@@ -244,20 +258,18 @@ chkres(model2QP,SiteSR.full$Treatment,SiteSR.full$Season)
 
 
 
-# by treatment
+# by treatment, using Chao2
 summary(TreatmentSR.full)
 
 # in order for this to be treated as a paired test we need to create a factor with a unique level for each exact season
 
 # first break the TreatmentSeason variable up at the _ breaks
-TreatmentSR.full <- separate(data = TreatmentSR.full, col = TreatmentSeason, into = c("Treatment1", "ExactSeason","Year"), sep = "_")
+TreatmentSR.full <- separate(data = TreatmentSR.full, col = ExactSeason, into = c("Treatment1", "ExactSeason","Year"), sep = "_")
 
 # then stitch the Season and Year components back together
 TreatmentSR.full$ExactSeason <- do.call(paste, c(TreatmentSR.full[c("ExactSeason","Year")], sep = "_"))
 TreatmentSR.full$ExactSeason <- as.factor(TreatmentSR.full$ExactSeason)
 
-# get rid of the columns we don't need
-TreatmentSR.full <- TreatmentSR.full[,c(1:3,5,7:length(TreatmentSR.full))]
 
 plot(chao ~ Treatment, TreatmentSR.full)
 plot(chao ~ Season, TreatmentSR.full)
@@ -375,13 +387,13 @@ dframe4$SiteSeason <- do.call(paste, c(dframe4[c("Site","Season")], sep = "_"))
 dframe4$SiteSeason <- as.factor(dframe4$SiteSeason)
 
 
-dframe4$TreatmentSeason <- do.call(paste, c(dframe4[c("Treatment","Season","Year")], sep = "_"))
-dframe4$TreatmentSeason <- as.factor(dframe4$TreatmentSeason)
+dframe4$ExactSeason <- do.call(paste, c(dframe4[c("Season","Year","Treatment")], sep = "_"))
+dframe4$ExactSeason <- as.factor(dframe4$ExactSeason)
 
 # put the data out into a matrix format
 
 matrix2 <- dcast(dframe4, Date + Site + Treatment
-                 + Sample + Season + Month + Year + SiteSeason + TreatmentSeason
+                 + Sample + Season + Month + Year + SiteSeason + ExactSeason
                  ~ PlantSpecies,
                  value.var = "PlantCoverage",
                  fun.aggregate = sum)
@@ -398,11 +410,11 @@ matricesP1 <- split(matrix2, list(matrix2$SiteSeason))  # this creates a list of
 
 
 # first let's use another of Callum's custom functions to plot all the species accumulation curves
-lapply(matricesP1, sacplot)
+lapply(matricesP1, sacplot,9)
 
 # let's also try for each site irrespective of season
 matricesP2 <- split(matrix2, list(matrix2$Site))  # this creates a list of smaller dframes, one for each level of sample
-lapply(matricesP2, sacplot)
+lapply(matricesP2, sacplot,9)
 
 
 # some of these might be nearing an asymptote but none are there, even with larger numbers of samples
@@ -414,7 +426,7 @@ lapply(matricesP2, sacplot)
 
 
 # now try site-based - doing it for every site based on repeated sampling at the site
-SitePSR <- lapply(matricesP1, sitebased)
+SitePSR <- lapply(matricesP1, sitebased,9)
 
 ### we now have a list of dataframes, each one containing the sample-level SR of one sample
 
@@ -434,8 +446,8 @@ SitePSR.full <- merge(dframePS, SitePSR.merge, by=0)
 
 
 # finally try by Treatment + Season (18 paired samples)
-matricesP3 <- split(matrix2, list(matrix2$TreatmentSeason))
-TreatmentPSR <- lapply(matricesP3, sitebased)
+matricesP3 <- split(matrix2, list(matrix2$ExactSeason))
+TreatmentPSR <- lapply(matricesP3, sitebased,9)
 
 # combine all dataframes together
 TreatmentPSR.merge <- do.call("cbind", TreatmentPSR)    # merge the data with one sample per column
@@ -448,6 +460,25 @@ TreatmentPSR.merge <- data.frame(t(TreatmentPSR.merge))
 
 # now we merge the two dataframes together by row name, using 'by=0' (column 0 is the row names)
 TreatmentPSR.full <- merge(dframePST, TreatmentPSR.merge, by=0)
+
+
+
+### as an aside, we want to calculate sampling completeness here
+# this is just observed species/extrapolated species *100
+
+TreatmentPSR.full$completeness <- (TreatmentPSR.full$Species*100)/TreatmentPSR.full$chao
+
+# we want an average sampling completeness across all networks as well
+summary(TreatmentPSR.full$completeness)
+mean(TreatmentPSR.full$completeness, na.rm=T)
+
+# let's also do a weighted interaction completeness - more attention is paid to more species-rich networks?
+
+weighted.mean(TreatmentPSR.full$completeness, TreatmentPSR.full$chao, na.rm=T)
+
+
+
+
 
 
 
