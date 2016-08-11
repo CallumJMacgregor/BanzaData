@@ -38,3 +38,32 @@ sitebased <- function(x,cols) {
   SR <- t(specpool(x))
   return(SR)
 }
+
+
+
+
+
+interaction.complete <- function(x,cols=1,threshold=0) {
+  p <- c("vegan")                                  # list of necessary packages
+  packages <- p[!(p %in% installed.packages()[,"Package"])]      # checks each is installed
+  
+  if(length(packages)) {
+    stop("Install required packages - ",packages)                # returns an error saying which packages are missing
+    
+  } else {
+    lapply(p, require, character.only = TRUE)                    # loads up packages if all are installed
+  }
+  
+  if (nrow(x)>threshold) {                   # checks if more than threshold number of individuals were sampled
+    x <- x[,-c(1:cols)]
+    SR <- t(specpool(x))
+    
+    
+    return(SR)                                        # outputs the data
+    
+  } else {                                               # if only one or two insect species sampled...
+    
+    warning("Fewer than 10 individuals sampled")         
+    
+  }
+}
