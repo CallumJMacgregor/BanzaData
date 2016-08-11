@@ -34,7 +34,7 @@ source("CheckResidsFunction.R")
 
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
-dframe1<-read.table("Data/FVNetworkMetrics.txt", header=TRUE)
+dframe1<-read.table("Data/NetworkMetricsFVbySample.txt", header=TRUE)
 
 summary(dframe1) # Check it's imported correctly
 
@@ -259,7 +259,7 @@ chkres(model1RBc)  # these residuals are surprisingly pretty good!
 
 
 ### read in the data - this is the .txt file you produced in the PreparingData.R script. 
-dframe2<-read.table("Data/PTNetworkMetrics.txt", header=TRUE)
+dframe2<-read.table("Data/NetworkMetricsPTbySample.txt", header=TRUE)
 
 summary(dframe2) # Check it's imported correctly
 
