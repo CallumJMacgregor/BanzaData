@@ -148,10 +148,27 @@ n.species <- aggregate(ICgood[,'n.species'],list(ICgood$ExactSeason),sum)
 colnames(n.species) <- c("ExactSeason","n.species")  
 
 
-# merge these three together
+# merge these three together to give final values
 means.both <- merge(means,weighted.means)
 means.full <- merge(n.species,means.both)
 
+
+
+
+### quick test for bias in sampling completeness
+means.full$Treatment <- factor(ifelse(grepl("NoFire",means.full$ExactSeason),"NoFire","Fire"))
+
+
+plot(WeightedMean ~ Treatment, data = means.full)
+
+
+model1 <- glm(WeightedMean ~ Treatment,
+              data = means.full)
+
+summary(model1)
+drop1(model1, test="Chi")
+
+# no significant effect of Treatment on sampling completeness
 
 
 ##################### development ##############################
