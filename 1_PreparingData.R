@@ -470,7 +470,7 @@ write.table(matrix1Lc, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 # now we want to produce a separate file with the data organised by each sampling session at each site
 # we will do this by aggregating samples from the same site and sampling session
 
-matrix1r <- matrix1L[,c(3:4,7:length(matrix1L))]
+matrix1r <- matrix1Lc[,c(5:6,9:length(matrix1Lc))]
 summary(matrix1r)
 
 
