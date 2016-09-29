@@ -9,7 +9,7 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS","MuMIn","bbmle")
+j <- c("lme4","car","ggplot2","RVAideMemoire","arm","MASS")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
