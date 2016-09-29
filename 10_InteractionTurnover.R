@@ -9,7 +9,7 @@ rm(list=ls())
 
 ### install if necessary and then load the libraries you need
 
-j <- c("betalink","plyr")
+j <- c("plyr")
 
 new.packages <- j[!(j %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
