@@ -213,25 +213,12 @@ matrix1$`Briza maxima` <- NULL
 matrix1L <- matrix1[matrix1$Lepidoptera==1,]
 matrix1L <- matrix1L[,-3]   
 
-# output the reformatted dataframe to a .txt file to use in downstream analysis
-write.table(matrix1L, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
-
 # N.B. at this point any typing errors in species names will become obvious as they will be assigned an additional column.
 # Therefore at this point, go back to the raw data, find these typing errors, correct them, and run this script again.
 
 
+# there is an additional check for this later in this script, so we save the remaining steps for later
 
-# now we want to produce a separate file with the data organised by each sampling session at each site
-# we will do this by aggregating samples from the same site and sampling session
-
-matrix1r <- matrix1L[,c(3:4,7:length(matrix1L))]
-summary(matrix1r)
-
-
-matrix2 <- ddply(matrix1r, .(Site,Date,Treatment,SamplingDay,Sample,Season,Month,Year), numcolwise(sum))
-
-# output the reformatted dataframe to a .txt file to use in downstream analysis
-write.table(matrix2, "Data\\SamplesNoct.txt", sep="\t", row.names=FALSE)
 
 
 
@@ -397,10 +384,196 @@ write.table(matrix3, "Data\\PlantTransects.txt", sep="\t", row.names=FALSE)
 
 
 
+### basic summary statistics
+# we want a selection of very basic statistics to cite at the start of the results section:
+
+# total number of moths caught
+nrow(matrix1L)
+
+# number of moths identified to at least genus
+matrix1s <- matrix1L[,c(1:2)]
+matrix1s$Count <- 1
+summary(matrix1s)
+
+# save the table at this point for later use
+matrix1all <- ddply(matrix1s, .(Family_Species), numcolwise(sum))
+write.table(matrix1all, "Data\\AllSpecies.txt", sep="\t", row.names=FALSE)
+
+
+# now remove anything not IDed to at least genus
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="none")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Unknown micro")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Unknown moth")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Lepidoptera")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Coleophoridae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Crambidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Elachistidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Gelechiidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Geometridae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Gracillariidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Noctuidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Plutellidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Pterophoridae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Pyralidae")
+matrix1s <- subset(matrix1s, !matrix1s$Family_Species=="Tortricidae")
+
+# number of rows is number of identified (to at least genus) individuals
+nrow(matrix1s)
+
+# number of (identified to at least genus) moth species caught
+matrix1ns <- ddply(matrix1s, .(Family_Species), numcolwise(sum))
+
+# number of rows is number of morphotypes IDed to genus or better
+nrow(matrix1ns)
+
+
+# number of moth families caught
+# at this point I have manually added the family that each species belongs to in the file "Data\\AllSpecies.txt" 
+# I have also recorded the taxonomic level to which each identification has been made
+# and made a small number of corrections/updates to species names
+
+# import the new table with this information
+dframe5<-read.csv("Data/AllSpeciesEdited.csv", header = T)
+summary(dframe5)
+
+summary(dframe5$IdentifiedTo)
+nrow(dframe5)
+
+dframe5$NoIdentifiedSp <- ifelse(dframe5$IdentifiedTo=="Species", 1,0)
+dframe5$NoMorphotypes <- 1
+
+dframe5i <- ddply(dframe5, .(IdentifiedTo), numcolwise(sum))
+dframe5f <- ddply(dframe5, .(Family), numcolwise(sum))
+
+# we want both of these as summary tables
+write.table(dframe5i, "Results\\IDlevel.txt", sep="\t", row.names=FALSE)
+write.table(dframe5f, "Results\\Families.txt", sep="\t", row.names=FALSE)
+
+
+### this is also the time to revisit our downstream scripts, as we have corrected the names
+
+matrix1Lc <- merge(dframe5,matrix1L, by.x = "Family_Species", by.y="Family_Species")
+
+# remove extra columns and rename corrected Family_Species column
+
+matrix1Lc <- matrix1Lc[,c(6,2,7:length(matrix1Lc))]
+
+colnames(matrix1Lc)[2] <- "Family_Species"
+
+
+# output the reformatted dataframe to a .txt file to use in downstream analysis
+write.table(matrix1Lc, "Data\\MatrixNoct.txt", sep="\t", row.names=FALSE)
 
 
 
 
+# now we want to produce a separate file with the data organised by each sampling session at each site
+# we will do this by aggregating samples from the same site and sampling session
+
+matrix1r <- matrix1L[,c(3:4,7:length(matrix1L))]
+summary(matrix1r)
+
+
+matrix2 <- ddply(matrix1r, .(Site,Date,Treatment,SamplingDay,Sample,Season,Month,Year), numcolwise(sum))
+
+# output the reformatted dataframe to a .txt file to use in downstream analysis
+write.table(matrix2, "Data\\SamplesNoct.txt", sep="\t", row.names=FALSE)
+
+
+
+
+
+# number of plant species recorded
+matrix3a <- matrix3
+matrix3a$NoTransects <- 1
+matrix3s <- ddply(matrix3a, .(PlantSpecies), numcolwise(sum))
+matrix3s <- subset(matrix3s, !matrix3s$PlantSpecies=="none")
+matrix3s <- subset(matrix3s, !matrix3s$PlantSpecies=="")
+
+matrix3s <- matrix3s[,c(1,6)]
+
+nrow(matrix3s)
+
+# number of plant families recorded
+write.table(matrix3s, "Data\\AllPlantSpecies.txt", sep="\t", row.names=FALSE)
+
+# manually added family column and correct a couple of spelling errors
+dframe6<-read.csv("Data/AllPlantSpecies.csv", header = T)
+summary(dframe6)
+
+dframe6$NoSpecies <- 1
+
+dframe6f <- ddply(dframe6, .(Family), numcolwise(sum))
+
+# we need this for a summary table
+write.table(dframe6f, "Results\\PlantFamilies.txt", sep="\t", row.names=FALSE)
+
+
+
+
+
+# number and percentage of moths carrying pollen
+matrix1Lc$PollenSum <- rowSums(matrix1Lc[,c(13:length(matrix1Lc))])
+matrix1Lc$PollenYN <- ifelse(matrix1Lc$PollenSum==0,0,1)
+
+sum(matrix1Lc$PollenYN)
+nrow(matrix1Lc)
+
+sum(matrix1Lc$PollenYN)*100/nrow(matrix1Lc)
+
+
+# species and families of pollen-carriers
+matrix1P <- subset(matrix1Lc, matrix1Lc$PollenYN==1)
+
+matrix1PC <- matrix1P[,c(2,81,82)]
+
+matrix1PC$Count <- 1
+
+matrix1PCs <- ddply(matrix1PC, .(Family_Species), numcolwise(sum))
+
+dframe5s <- dframe5[,c(2,4,5)]
+
+matrix1PCm <- merge(matrix1PCs,dframe5s, by.x = "Family_Species", by.y="CorrectedName", all=T)
+
+matrix1PCc <- matrix1PCm[!is.na(matrix1PCm$PollenYN),]
+  
+nrow(matrix1PCc)*100/nrow(matrix1PCm)
+
+summary(matrix1PCc$IdentifiedTo)
+
+matrix1PCf <- ddply(matrix1PCc, .(Family), numcolwise(sum))
+
+nrow(matrix1PCf)-1
+
+
+# number and percentage of pollen species
+matrix1Pp <- matrix1P[,c(2,13:80)]
+
+matrix1Ppc <- ddply(matrix1Pp, .(Family_Species), numcolwise(sum))
+
+rownames(matrix1Ppc) <- matrix1Ppc[,1]
+matrix1Ppc <- matrix1Ppc[,-1]
+
+
+pollen <- data.frame(t(matrix1Ppc))
+
+pollen$TotalPollen <- rowSums(pollen)
+
+pollen$PollenSpecies <- rownames(pollen)
+pollen <- pollen[,c(length(pollen)-1,length(pollen))]
+
+
+compare <- merge(pollen,dframe6,by.x = "PollenSpecies", by.y = "PlantSpecies", all=T)
+
+compare[is.na(compare)] <- 0
+
+
+compare$Class <- as.factor(ifelse(compare$TotalPollen==0,"NoPollen",
+                                  ifelse(compare$NoTransects==0,"NoFlower","Both")))
+
+summary(compare$Class)
+
+58*100/69
 
 #################################### development #########################
 
